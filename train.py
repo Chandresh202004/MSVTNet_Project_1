@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# MSVTNet Training Script for BCI Competition IV 2a and 2b
-# Author: Chandresh202004
-# Date: 2025-07-13
-
 import os
 import json
 import numpy as np
@@ -18,7 +13,6 @@ import argparse
 import datetime
 from pathlib import Path
 
-# Import your model and dataloader
 from msvtnet import MSVTNet
 from dataloader import get_dataloader
 
@@ -83,17 +77,13 @@ def train_one_epoch(model, train_loader, optimizer, device, scaler=None, use_mix
     all_preds = []
     all_labels = []
     
-    # Class weights for balancing (computed dynamically if needed)
     class_weights = None
     
-    # Use tqdm for progress bar
     pbar = tqdm(train_loader, desc=f'Training', leave=False)
     
     for batch_idx, (inputs, labels) in enumerate(pbar):
-        # Move inputs and labels to device
         inputs, labels = inputs.to(device), labels.to(device)
         
-        # Apply mixup if enabled
         if use_mixup and np.random.random() < 0.5:
             inputs, targets_a, targets_b, lam = mixup_data(inputs, labels)
             mixup_applied = True
@@ -101,22 +91,18 @@ def train_one_epoch(model, train_loader, optimizer, device, scaler=None, use_mix
             targets_a = labels
             mixup_applied = False
         
-        # Zero the parameter gradients
         optimizer.zero_grad()
         
-        # Forward pass with optional mixed precision
         if scaler is not None:
-            with torch.amp.autocast('cuda'):  # Updated syntax
+            with torch.amp.autocast('cuda'):  
                 logits, aux_logits = model(inputs)
                 
                 if mixup_applied:
-                    # Custom mixup loss calculation
                     cls_loss = mixup_criterion(
                         lambda p, y: nn.functional.cross_entropy(p, y, weight=class_weights),
                         logits, targets_a, targets_b, lam
                     )
                     
-                    # Auxiliary losses with mixup
                     aux_loss = 0
                     for aux_out in aux_logits:
                         aux_loss += mixup_criterion(
@@ -125,14 +111,12 @@ def train_one_epoch(model, train_loader, optimizer, device, scaler=None, use_mix
                         )
                     aux_loss /= len(aux_logits) if aux_logits else 1
                     
-                    # Combined loss with dynamic weighting
                     if model.training_step < 1000:
                         alpha = 0.8
                     else:
                         alpha = 0.3
                     total_loss = (1 - alpha) * cls_loss + alpha * aux_loss
                 else:
-                    # Standard loss computation
                     if use_focal_loss:
                         cls_loss = focal_loss(logits, labels)
                         aux_loss = sum(focal_loss(aux, labels) for aux in aux_logits) / len(aux_logits)
@@ -140,21 +124,17 @@ def train_one_epoch(model, train_loader, optimizer, device, scaler=None, use_mix
                     else:
                         total_loss, cls_loss, aux_loss, _ = model.compute_loss(logits, aux_logits, labels, class_weights)
             
-            # Backward pass with gradient scaling
             scaler.scale(total_loss).backward()
             
-            # Apply gradient clipping
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             
             scaler.step(optimizer)
             scaler.update()
         else:
-            # Standard forward and backward pass
             logits, aux_logits = model(inputs)
             
             if mixup_applied:
-                # Handle mixup similar to above
                 cls_loss = mixup_criterion(
                     lambda p, y: nn.functional.cross_entropy(p, y, weight=class_weights),
                     logits, targets_a, targets_b, lam
@@ -183,12 +163,10 @@ def train_one_epoch(model, train_loader, optimizer, device, scaler=None, use_mix
             
             total_loss.backward()
             
-            # Apply gradient clipping
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             
             optimizer.step()
         
-        # Track metrics
         running_loss.update(total_loss.item(), inputs.size(0))
         running_main_loss.update(cls_loss.item(), inputs.size(0))
         running_aux_loss.update(aux_loss.item(), inputs.size(0))
@@ -197,14 +175,12 @@ def train_one_epoch(model, train_loader, optimizer, device, scaler=None, use_mix
         all_preds.extend(preds.cpu().numpy())
         all_labels.extend(labels.cpu().numpy())
         
-        # Update progress bar
         pbar.set_postfix({
             'loss': f'{running_loss.avg:.4f}',
             'main_loss': f'{running_main_loss.avg:.4f}',
             'aux_loss': f'{running_aux_loss.avg:.4f}'
         })
     
-    # Calculate epoch statistics
     epoch_loss = running_loss.avg
     epoch_acc = accuracy_score(all_labels, all_preds)
     
@@ -222,19 +198,15 @@ def validate(model, val_loader, device):
             inputs, labels = inputs.to(device), labels.to(device)
             logits, aux_logits = model(inputs)
             
-            # Compute loss
             loss, _, _, _ = model.compute_loss(logits, aux_logits, labels)
             val_loss.update(loss.item(), inputs.size(0))
             
-            # Get predictions
             _, preds = torch.max(logits, 1)
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
     
-    # Calculate metrics
     val_acc = accuracy_score(all_labels, all_preds)
     
-    # Create confusion matrix
     cm = confusion_matrix(all_labels, all_preds)
     
     return val_loss.avg, val_acc, cm, all_preds, all_labels
@@ -245,7 +217,6 @@ def plot_training_curve(train_losses, val_losses, train_accs, val_accs, save_pat
     
     plt.figure(figsize=(12, 5))
     
-    # Plot loss
     plt.subplot(1, 2, 1)
     plt.plot(epochs, train_losses, 'b-', label='Training Loss')
     plt.plot(epochs, val_losses, 'r-', label='Validation Loss')
@@ -254,7 +225,6 @@ def plot_training_curve(train_losses, val_losses, train_accs, val_accs, save_pat
     plt.ylabel('Loss')
     plt.legend()
     
-    # Plot accuracy
     plt.subplot(1, 2, 2)
     plt.plot(epochs, train_accs, 'b-', label='Training Accuracy')
     plt.plot(epochs, val_accs, 'r-', label='Validation Accuracy')
@@ -280,12 +250,11 @@ def plot_confusion_matrix(cm, class_names, save_path):
 
 def calibrate_for_subject(model, subject_data, device):
     """Fine-tune the model's batch normalization layers for a specific subject"""
-    model.train()  # Set to train mode to update BN statistics
-    
-    with torch.no_grad():  # No gradient updates, just BN statistics
+    model.train()  
+    with torch.no_grad():  
         for data, _ in subject_data:
             data = data.to(device)
-            _ = model(data)  # Forward pass updates BN statistics
+            _ = model(data)  
     
     return model
 
@@ -299,19 +268,17 @@ def check_data_distribution(data_loader, num_classes):
         for label in labels:
             class_counts[label.item()] += 1
         
-        # Check data statistics
         sample_means.append(inputs.mean().item())
         sample_stds.append(inputs.std().item())
     
     print(f"Class distribution: {class_counts}")
     print(f"Data mean: {np.mean(sample_means):.6f}, std: {np.mean(sample_stds):.6f}")
     
-    # Check if classes are balanced
     total = sum(class_counts.values())
     expected_per_class = total / len(class_counts)
     imbalance = max(abs(count - expected_per_class)/expected_per_class for count in class_counts.values())
     
-    if imbalance > 0.1:  # More than 10% imbalance
+    if imbalance > 0.1: 
         print(f"Warning: Dataset is imbalanced (max deviation: {imbalance*100:.1f}%)")
     else:
         print("Dataset is well-balanced")
@@ -334,33 +301,27 @@ def train_with_curriculum(model, train_loader, test_loader, optimizer, device, s
     train_losses, train_accs = [], []
     val_losses, val_accs = [], []
     
-    # Print the correct dataset type and class names
     print(f"Using dataset type {dataset_type} in curriculum training with {len(get_class_names(dataset_type))} classes")
     class_names = get_class_names(dataset_type)
     
-    # Phase 1: Train only MSST blocks (freeze CSGT)
     print("Phase 1: Training MSST blocks...")
     for param in model.csgt_encoder.parameters():
         param.requires_grad = False
     
     for epoch in range(30):
-        # Train
         epoch_loss, epoch_acc, _, _ = train_one_epoch(model, train_loader, optimizer, device, scaler, use_mixup=True)
         train_losses.append(epoch_loss)
         train_accs.append(epoch_acc)
         
-        # Validate
         val_loss, val_acc, cm, _, _ = validate(model, test_loader, device)
         val_losses.append(val_loss)
         val_accs.append(val_acc)
         
         print(f"Epoch {epoch+1}/{30} - Train Loss: {epoch_loss:.4f}, Train Acc: {epoch_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
         
-        # Update scheduler
         if scheduler is not None:
             scheduler.step()
     
-    # Phase 2: Train CSGT with frozen MSST
     print("Phase 2: Training CSGT encoder...")
     for param in model.msst_blocks.parameters():
         param.requires_grad = False
@@ -368,66 +329,55 @@ def train_with_curriculum(model, train_loader, test_loader, optimizer, device, s
         param.requires_grad = True
     
     for epoch in range(30):
-        # Train
         epoch_loss, epoch_acc, _, _ = train_one_epoch(model, train_loader, optimizer, device, scaler, use_mixup=True)
         train_losses.append(epoch_loss)
         train_accs.append(epoch_acc)
         
-        # Validate
         val_loss, val_acc, cm, _, _ = validate(model, test_loader, device)
         val_losses.append(val_loss)
         val_accs.append(val_acc)
         
         print(f"Epoch {epoch+1}/{30} - Train Loss: {epoch_loss:.4f}, Train Acc: {epoch_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
         
-        # Update scheduler
         if scheduler is not None:
             scheduler.step()
     
-    # Phase 3: Fine-tune everything
     print("Phase 3: Fine-tuning all components...")
     for param in model.parameters():
         param.requires_grad = True
     
-    # Use lower learning rate for fine-tuning
     for g in optimizer.param_groups:
         g['lr'] = g['lr'] * 0.1
     
     remaining_epochs = epochs - 60
     for epoch in range(remaining_epochs):
-        # Train
+        
         epoch_loss, epoch_acc, _, _ = train_one_epoch(model, train_loader, optimizer, device, scaler, use_mixup=True)
         train_losses.append(epoch_loss)
         train_accs.append(epoch_acc)
         
-        # Validate
         val_loss, val_acc, cm, val_preds, val_labels = validate(model, test_loader, device)
         val_losses.append(val_loss)
         val_accs.append(val_acc)
         
         print(f"Epoch {epoch+1+60}/{epochs} - Train Loss: {epoch_loss:.4f}, Train Acc: {epoch_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
         
-        # Check for improvement
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             epochs_no_improve = 0
             
-            # Save best model
             if save_dir:
                 os.makedirs(save_dir, exist_ok=True)
                 torch.save(model.state_dict(), os.path.join(save_dir, f'subject_{subject}_best_model.pth'))
                 
-                # Save confusion matrix for best model
                 if results_dir:
                     os.makedirs(results_dir, exist_ok=True)
                     plot_confusion_matrix(cm, class_names, os.path.join(results_dir, f'subject_{subject}_confusion_matrix.png'))
                     
-                    # Save classification report
                     clf_report = classification_report(val_labels, val_preds, target_names=class_names)
                     with open(os.path.join(results_dir, f'subject_{subject}_classification_report.txt'), 'w') as f:
                         f.write(clf_report)
                     
-                    # Make sure we save history.json at each improvement
                     temp_history = {
                         'train_losses': train_losses,
                         'val_losses': val_losses,
@@ -445,16 +395,13 @@ def train_with_curriculum(model, train_loader, test_loader, optimizer, device, s
         else:
             epochs_no_improve += 1
             
-        # Early stopping
         if epochs_no_improve >= early_stopping:
             print(f"Early stopping triggered after {epoch+1+60} epochs")
             break
             
-        # Update scheduler
         if scheduler is not None:
             scheduler.step()
     
-    # Save final model and results
     if save_dir:
         os.makedirs(save_dir, exist_ok=True)
         torch.save(model.state_dict(), os.path.join(save_dir, f'subject_{subject}_final_model.pth'))
@@ -468,11 +415,9 @@ def train_with_curriculum(model, train_loader, test_loader, optimizer, device, s
 def determine_dataset_properties(args):
     """Determine the correct number of classes and class names based on dataset"""
     if "2b" in args.data_dir:
-        # If we're using BCIC IV 2b data, it's always 2 classes
         print("Detected BCIC IV 2b dataset - using 2 classes")
         return 2, ['Left Hand', 'Right Hand']
     else:
-        # Default to 2a dataset with 4 classes
         print(f"Using dataset type: BCIC IV {args.dataset_type}")
         if args.dataset_type == "2a":
             return 4, ['Left Hand', 'Right Hand', 'Feet', 'Tongue']
@@ -482,7 +427,6 @@ def determine_dataset_properties(args):
 def main():
     parser = argparse.ArgumentParser(description='Train MSVTNet model on BCI Competition IV datasets')
     
-    # Dataset parameters
     parser.add_argument('--data_dir', type=str, default='D:/MSVTNet_Project/datasets/BCIC_IV_2a/preprocessed', 
                         help='Path to the preprocessed dataset')
     parser.add_argument('--dataset_type', type=str, choices=['2a', '2b'], default='2a',
@@ -490,7 +434,6 @@ def main():
     parser.add_argument('--subject', type=int, default=1, choices=range(1, 10), 
                         help='Subject ID (1-9)')
     
-    # Session parameters
     parser.add_argument('--session_dependent', action='store_true', 
                        help='Use session-dependent training (train on one session, test on another)')
     parser.add_argument('--train_session', type=int, default=1, choices=[1, 2, 3], 
@@ -498,7 +441,6 @@ def main():
     parser.add_argument('--test_session', type=int, default=2, choices=[1, 2, 3], 
                        help='Session ID for testing (1-3, depending on dataset)')
     
-    # Training parameters
     parser.add_argument('--epochs', type=int, default=150, help='Number of training epochs')
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
@@ -506,10 +448,8 @@ def main():
     parser.add_argument('--weight_decay', type=float, default=0.0001, help='Weight decay')
     parser.add_argument('--early_stopping', type=int, default=30, help='Early stopping patience')
     
-    # Model parameters
     parser.add_argument('--embedding_dim', type=int, default=32, help='Embedding dimension for MSVTNet')
     
-    # Optimization options
     parser.add_argument('--scheduler', type=str, default='step', choices=['step', 'cosine', 'plateau', 'none'], 
                        help='Learning rate scheduler')
     parser.add_argument('--augment', action='store_true', help='Use data augmentation')
@@ -518,7 +458,6 @@ def main():
     parser.add_argument('--focal_loss', action='store_true', help='Use focal loss')
     parser.add_argument('--mixup', action='store_true', help='Use mixup augmentation')
     
-    # Output parameters
     parser.add_argument('--save_dir', type=str, default='models/msvtnet', help='Directory to save trained models')
     parser.add_argument('--results_dir', type=str, default='results/msvtnet', help='Directory to save results')
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility')
@@ -526,17 +465,14 @@ def main():
     
     args = parser.parse_args()
     
-    # Set random seed for reproducibility
     set_seed(args.seed)
     
-    # Special case: Handle 2b data with 2a naming convention
     if "2b" in args.data_dir:
         print("Detected 2b data with 2a file naming convention")
-        num_classes = 2  # Force 2 classes for 2b data
+        num_classes = 2  
         class_names = ['Left Hand', 'Right Hand']
-        actual_dataset_type = "2b"  # This is the key fix!
+        actual_dataset_type = "2b"  
     else:
-        # Default dataset type handling
         num_classes = 4 if args.dataset_type == "2a" else 2
         class_names = get_class_names(args.dataset_type)
         actual_dataset_type = args.dataset_type
@@ -544,14 +480,11 @@ def main():
     print(f"Using dataset type: BCIC IV {args.dataset_type} with {num_classes} classes")
     print(f"Classes: {class_names}")
     
-    # Determine the mode for file naming (session_dependent or session_independent)
     mode = f"session_dependent_{args.dataset_type}" if args.session_dependent else f"session_independent_{args.dataset_type}"
     
-    # Create directories
     os.makedirs(args.save_dir, exist_ok=True)
     os.makedirs(args.results_dir, exist_ok=True)
     
-    # Save arguments with proper mode in filename
     try:
         with open(os.path.join(args.results_dir, f'subject_{args.subject}_args.json'), 'w') as f:
             json.dump(vars(args), f, indent=2)
@@ -559,11 +492,9 @@ def main():
     except Exception as e:
         print(f"Error saving arguments: {e}")
     
-    # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     
-    # Data loading
     print(f"Loading data for subject {args.subject}...")
     
     if args.session_dependent:
@@ -587,35 +518,30 @@ def main():
             augment=args.augment
         )
     
-    # Check class balance
     print("Checking data distribution...")
     check_data_distribution(train_loader, num_classes)
     check_data_distribution(test_loader, num_classes)
     
-    # Get input dimensions from the data
     sample_input, _ = next(iter(train_loader))
-    num_channels = sample_input.shape[1]  # [batch_size, channels, time]
+    num_channels = sample_input.shape[1] 
     input_time_length = sample_input.shape[2]
     
-    # Create model
     print("Creating MSVTNet model...")
     model = MSVTNet(
         num_channels=num_channels,
-        num_classes=num_classes,  # Set based on dataset type
+        num_classes=num_classes,  
         input_time_length=input_time_length,
         dropout_rate=args.dropout
     )
     model = model.to(device)
     
-    # Print model summary
     print(model)
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Total trainable parameters: {num_params:,}")
     
-    # Optimizer
+    
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     
-    # Learning rate scheduler
     scheduler = None
     if args.scheduler == 'step':
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
@@ -624,15 +550,12 @@ def main():
     elif args.scheduler == 'plateau':
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=10)
     
-    # Mixed precision scaler
     scaler = GradScaler() if args.mixed_precision else None
     
-    # Training
     print(f"Starting training for subject {args.subject}...")
     start_time = datetime.datetime.now()
     
     if args.progressive_training:
-        # Use progressive training strategy
         best_acc, train_losses, val_losses, train_accs, val_accs = train_with_curriculum(
             model, train_loader, test_loader, optimizer, device, scheduler,
             epochs=args.epochs, scaler=scaler, early_stopping=args.early_stopping,
@@ -640,14 +563,12 @@ def main():
             subject=args.subject, dataset_type=actual_dataset_type, mode=mode  # Use actual_dataset_type here!
         )
     else:
-        # Use standard training loop
         best_val_acc = 0.0
         epochs_no_improve = 0
         train_losses, train_accs = [], []
         val_losses, val_accs = [], []
         
         for epoch in range(args.epochs):
-            # Train
             train_loss, train_acc, train_preds, train_labels = train_one_epoch(
                 model, train_loader, optimizer, device, scaler,
                 use_mixup=args.mixup, use_focal_loss=args.focal_loss
@@ -655,37 +576,30 @@ def main():
             train_losses.append(train_loss)
             train_accs.append(train_acc)
             
-            # Validate
             val_loss, val_acc, cm, val_preds, val_labels = validate(model, test_loader, device)
             val_losses.append(val_loss)
             val_accs.append(val_acc)
             
             print(f"Epoch {epoch+1}/{args.epochs} - Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
             
-            # Update scheduler
             if scheduler is not None:
                 if args.scheduler == 'plateau':
                     scheduler.step(val_acc)
                 else:
                     scheduler.step()
             
-            # Check for improvement
             if val_acc > best_val_acc:
                 best_val_acc = val_acc
                 epochs_no_improve = 0
                 
-                # Save best model
                 torch.save(model.state_dict(), os.path.join(args.save_dir, f'subject_{args.subject}_best_model.pth'))
                 
-                # Save confusion matrix for best model
                 plot_confusion_matrix(cm, class_names, os.path.join(args.results_dir, f'subject_{args.subject}_confusion_matrix.png'))
                 
-                # Save classification report
                 clf_report = classification_report(val_labels, val_preds, target_names=class_names)
                 with open(os.path.join(args.results_dir, f'subject_{args.subject}_classification_report.txt'), 'w') as f:
                     f.write(clf_report)
                     
-                # Save intermediate history at each improvement
                 temp_history = {
                     'train_losses': train_losses,
                     'val_losses': val_losses,
@@ -703,18 +617,15 @@ def main():
             else:
                 epochs_no_improve += 1
             
-            # Save intermediate results every 10 epochs
             if epoch % 10 == 0 or epoch == args.epochs - 1:
                 plot_training_curve(train_losses, val_losses, train_accs, val_accs, os.path.join(args.results_dir, f'subject_{args.subject}_learning_curve.png'))
                 
-            # Early stopping
             if epochs_no_improve >= args.early_stopping:
                 print(f"Early stopping triggered after {epoch+1} epochs")
                 break
         
         best_acc = best_val_acc
     
-    # Training complete
     end_time = datetime.datetime.now()
     training_time = end_time - start_time
     
@@ -722,10 +633,8 @@ def main():
     print(f"Best validation accuracy: {best_acc:.4f}")
     print(f"Total training time: {training_time}")
     
-    # Save final model
     torch.save(model.state_dict(), os.path.join(args.save_dir, f'subject_{args.subject}_final_model.pth'))
     
-    # Save training history - THIS IS THE CRITICAL PART THAT WAS MISSING BEFORE
     history = {
         'train_losses': train_losses,
         'val_losses': val_losses,
@@ -737,7 +646,6 @@ def main():
     
     try:
         with open(os.path.join(args.results_dir, f'subject_{args.subject}_history.json'), 'w') as f:
-            # Convert numpy arrays to lists for JSON serialization
             for k, v in history.items():
                 if isinstance(v, np.ndarray):
                     history[k] = v.tolist()
