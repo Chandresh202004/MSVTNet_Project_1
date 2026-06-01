@@ -24,7 +24,6 @@ def main():
             data = np.load(files[0])
             print(f"Success! Available keys in the file: {list(data.keys())}")
             
-            # Try to access each array in the file
             for key in data.keys():
                 print(f"  - {key}: shape {data[key].shape}, dtype {data[key].dtype}")
             
