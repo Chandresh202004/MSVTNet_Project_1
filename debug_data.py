@@ -44,34 +44,6 @@ def check_and_fix_labels(input_path, output_path=None):
     
     fixed = False
 
-    if np.min(y) > 0 or np.max(y) > 3:
-
-        if np.min(y) >= 769:
-
-            new_y = np.array(
-                [y_val - 769 for y_val in y]
-            )
-
-        elif np.min(y) >= 1 and np.max(y) <= 4:
-
-            new_y = y - 1
-
-        else:
-            return False
-        
-        unique_new, counts_new = np.unique(
-            new_y,
-            return_counts=True
-        )
-        
-        np.savez(
-            output_path,
-            data=X,
-            labels=new_y
-        )
-
-        fixed = True
-
     if np.isnan(X).any() or np.isinf(X).any():
 
         nan_count = np.isnan(X).sum()
