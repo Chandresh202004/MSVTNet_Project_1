@@ -1,0 +1,874 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf-8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage{enumerate}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{textcomp}
+
+% Fix for listings package
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=4,
+    frame=lines,
+    rulecolor=\color{black},
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1
+}
+
+% Header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{MSVTNet Project}
+\rhead{Interview Preparation}
+\cfoot{\thepage}
+
+\title{\textbf{\Large MSVTNet Project Explanation}\\
+\textbf{Brain Signal Classification using Vision Transformers}\\
+\normalsize Interview Guide \& Data Validation Role}
+\author{Data Quality \& Validation Specialist}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Project Overview}
+% ============================================================================
+
+\subsection{What is MSVTNet?}
+
+MSVTNet stands for \textbf{Multi-Scale Vision Transformer Neural Network}. It is an artificial intelligence system designed to:
+
+\begin{itemize}
+    \item Read \textbf{brain signals} (EEG - Electroencephalography)
+    \item Recognize what \textbf{movement} a person is \textbf{thinking about}
+    \item Classify into 4 movement types: Left Hand, Right Hand, Feet, or Tongue
+    \item Achieve \textbf{94\% plus accuracy} on real brain signals
+\end{itemize}
+
+\subsection{Real-World Application}
+
+Imagine someone who is paralyzed. Using this technology:
+
+\begin{tcolorbox}[colback=blue!10,colframe=blue!50!black,title=Use Case]
+Person thinks ``move left hand'' $\rightarrow$ System recognizes it $\rightarrow$ Robotic arm moves \textbf{automatically}
+\end{tcolorbox}
+
+\subsection{Project Technology Stack}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Component} & \textbf{Technology} & \textbf{Purpose} \\
+\hline
+Language & Python 3.10 & Programming \\
+Deep Learning & PyTorch 2.0.1 & AI Model \\
+GPU Support & CUDA 11.8 & Fast Processing \\
+Data Processing & NumPy, Pandas & Data Validation \\
+Hardware & NVIDIA RTX 3090 & GPU Acceleration \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================================
+\section{Your Role: Data Quality and Validation Specialist}
+% ============================================================================
+
+\subsection{Responsibilities}
+
+Your primary responsibility is to:
+
+\begin{enumerate}
+    \item \textbf{Check for missing values} (NULL values) in datasets
+    \item \textbf{Validate data integrity} across all files
+    \item \textbf{Identify anomalies} in brain signal data
+    \item \textbf{Generate reports} on data quality
+    \item \textbf{Ensure data consistency} before model training
+\end{enumerate}
+
+\subsection{Tools You Use}
+
+\begin{tcolorbox}[colback=yellow!10,colframe=orange!50!black,title=Your Toolkit]
+\begin{itemize}
+    \item \textbf{NumPy}: For numerical array operations
+    \item \textbf{Pandas}: For data frame manipulation and analysis
+    \item \textbf{Python}: For scripting and automation
+\end{itemize}
+\end{tcolorbox}
+
+% ============================================================================
+\section{Project Pipeline: Step-by-Step Explanation}
+% ============================================================================
+
+\subsection{Step 1: Data Collection}
+
+\subsubsection{Non-Technical Explanation}
+
+Think of this as \textbf{recording brain activity}:
+
+\begin{tcolorbox}[colback=green!10,colframe=green!50!black,title=Recording Process]
+\begin{enumerate}
+    \item Put an \textbf{EEG headset} on a person (like a cap with 22 electrodes)
+    \item Ask them to \textbf{THINK about moving}:
+    \begin{itemize}
+        \item Think about moving your LEFT HAND: Record signal
+        \item Think about moving your RIGHT HAND: Record signal
+        \item Think about moving your FEET: Record signal
+        \item Think about moving your TONGUE: Record signal
+    \end{itemize}
+    \item Repeat 40-50 times per movement type
+    \item Save as GDF files (raw brain signal format)
+\end{enumerate}
+\end{tcolorbox}
+
+\subsubsection{Technical Explanation}
+
+\begin{lstlisting}[caption={Raw Data Format}]
+Raw Brain Signals (GDF file):
+- 22 channels (electrodes)
+- 250 Hz sampling rate (250 samples per second)
+- 3.5 seconds per trial
+- Total samples per trial: 250 x 3.5 = 875 data points
+
+Data shape: (number_of_trials, 22_channels, 875_timepoints)
+Example: (40 trials, 22 channels, 875 timepoints)
+\end{lstlisting}
+
+\subsection{Step 2: Data Preprocessing (Your Quality Check Point!)}
+
+\subsubsection{Non-Technical Explanation}
+
+Raw brain signals are \textbf{MESSY}. They contain:
+
+\begin{itemize}
+    \item \textbf{Noise}: Electrical interference from the environment
+    \item \textbf{Artifacts}: Muscle movements, eye blinks
+    \item \textbf{Inconsistencies}: Different signal scales between people
+\end{itemize}
+
+\textbf{Preprocessing = Cleaning the data}
+
+\subsubsection{Technical Explanation}
+
+\begin{tcolorbox}[colback=cyan!10,colframe=cyan!50!black,title=Preprocessing Steps]
+\begin{enumerate}
+    \item \textbf{Bandpass Filter (4-40 Hz)}: Keep only brain signal frequencies
+    \item \textbf{Common Average Reference}: Remove common noise
+    \item \textbf{Standardization}: Normalize to mean=0, std=1
+    \item \textbf{Save to NPZ}: Compressed format for storage
+\end{enumerate}
+\end{tcolorbox}
+
+\subsubsection{Your Quality Check Role}
+
+\begin{lstlisting}[caption={Check Data After Preprocessing}]
+import numpy as np
+import pandas as pd
+import glob
+
+# Load preprocessed data
+data_path = "path/to/preprocessed/data"
+npz_files = glob.glob(f"{data_path}/*.npz")
+
+for file in npz_files:
+    # Load NPZ file
+    data = np.load(file)
+    
+    # Extract data and labels
+    signals = data['data']
+    labels = data['labels']
+    
+    # Check 1: Any NULL/NaN values?
+    print("Checking for NULL values...")
+    nan_count_signals = np.isnan(signals).sum()
+    nan_count_labels = np.isnan(labels).sum()
+    
+    print(f"NaN in signals: {nan_count_signals}")
+    print(f"NaN in labels: {nan_count_labels}")
+    
+    # Check 2: Signal range
+    print(f"Signal range: {signals.min()}, {signals.max()}")
+    
+    # Check 3: Label distribution
+    unique_labels, counts = np.unique(labels, return_counts=True)
+    print(f"Class distribution: {dict(zip(unique_labels, counts))}")
+\end{lstlisting}
+
+\subsection{Step 3: Data Loading for Training}
+
+\subsubsection{Non-Technical Explanation}
+
+Before the AI trains, data must be:
+
+\begin{enumerate}
+    \item \textbf{Split}: 70\% for training, 30\% for testing
+    \item \textbf{Batched}: Grouped into chunks of 32 samples
+    \item \textbf{Prepared}: Converted to PyTorch format
+\end{enumerate}
+
+\subsubsection{Technical Explanation}
+
+\begin{lstlisting}[caption={Data Validation Before Training}]
+import torch
+from torch.utils.data import DataLoader, Dataset
+
+# Create custom dataset
+class BCIDataset(Dataset):
+    def __init__(self, data, labels):
+        self.data = data
+        self.labels = labels
+        
+        # Validate during initialization
+        assert self.data.shape[0] == self.labels.shape[0], \
+            "Data and labels must have same length"
+        
+        assert not np.isnan(self.data).any(), \
+            "Found NaN values in data!"
+
+# Create DataLoader
+train_loader = DataLoader(train_dataset, 
+                         batch_size=32, shuffle=True)
+
+# Your role: Verify data quality
+for batch_data, batch_labels in train_loader:
+    if torch.isnan(batch_data).any():
+        print("ERROR: NaN in batch data!")
+    else:
+        print("Batch OK")
+    break
+\end{lstlisting}
+
+\subsection{Step 4: Model Architecture}
+
+\subsubsection{Non-Technical Explanation}
+
+The MSVTNet model has 3 main blocks:
+
+\begin{tcolorbox}[colback=magenta!10,colframe=magenta!50!black,title=Model Structure]
+
+\textbf{BLOCK 1: Multi-Scale Extraction (MSST)}
+\begin{itemize}
+    \item Looks at brain signals with 3 different zoom levels
+    \item Window sizes: 3, 5, 7
+    \item Output: 3 different feature maps
+\end{itemize}
+
+\textbf{BLOCK 2: Feature Combination (CSGT - Transformer)}
+\begin{itemize}
+    \item Takes 3 feature maps from Block 1
+    \item Figures out which features are related
+    \item Uses attention mechanism (selective focus)
+    \item Output: 1 combined feature representation
+\end{itemize}
+
+\textbf{BLOCK 3: Classification (Classifier Head)}
+\begin{itemize}
+    \item Takes combined features
+    \item Predicts: Left Hand / Right Hand / Feet / Tongue
+    \item Output: 1 of 4 predictions
+\end{itemize}
+
+\end{tcolorbox}
+
+\subsubsection{Technical Explanation}
+
+\begin{lstlisting}[caption={Model Architecture}]
+import torch.nn as nn
+
+class MSVTNet(nn.Module):
+    def __init__(self, num_channels=22, num_classes=4):
+        super(MSVTNet, self).__init__()
+        
+        # BLOCK 1: Multi-Scale Extraction
+        self.msst_blocks = nn.ModuleList([
+            self.create_cnn_block(num_channels, 32, kernel_size=k)
+            for k in [3, 5, 7]
+        ])
+        
+        # BLOCK 2: Transformer Encoder
+        self.transformer = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=96,
+                nhead=4,
+                dim_feedforward=256,
+                dropout=0.5
+            ),
+            num_layers=2
+        )
+        
+        # BLOCK 3: Classification Head
+        self.classifier = nn.Sequential(
+            nn.Linear(96, 32),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(32, num_classes)
+        )
+\end{lstlisting}
+
+\subsection{Step 5: Training Process}
+
+\subsubsection{Non-Technical Explanation}
+
+Training is like \textbf{teaching a child}:
+
+\begin{tcolorbox}[colback=yellow!10,colframe=orange!50!black,title=Training Analogy]
+\begin{enumerate}
+    \item Show 50 examples of LEFT HAND brain signals
+    \item Model guesses: LEFT HAND or RIGHT HAND
+    \item If wrong: No, that was LEFT HAND! Learn from this!
+    \item Adjust model's brain (weights) slightly
+    \item Repeat thousands of times
+    \item Eventually: Model becomes expert
+\end{enumerate}
+\end{tcolorbox}
+
+\subsubsection{Technical Explanation}
+
+\begin{lstlisting}[caption={Training Loop with Quality Checks}]
+import torch.optim as optim
+
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+loss_fn = nn.CrossEntropyLoss()
+
+for epoch in range(150):
+    for batch_data, batch_labels in train_loader:
+        
+        # YOUR QUALITY CHECK
+        if torch.isnan(batch_data).any():
+            print(f"ERROR: NaN at epoch {epoch}")
+            continue
+        
+        predictions = model(batch_data)
+        loss = loss_fn(predictions, batch_labels)
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    
+    print(f"Epoch {epoch}: Loss={loss:.4f}")
+\end{lstlisting}
+
+\subsection{Step 6: Testing and Evaluation}
+
+\subsubsection{Non-Technical Explanation}
+
+After training, we test on \textbf{NEW data the model has never seen}:
+
+\begin{tcolorbox}[colback=green!10,colframe=green!50!black,title=Testing Process]
+\begin{enumerate}
+    \item Show model 30\% of signals it has never seen
+    \item Model makes predictions
+    \item Compare predictions with actual labels
+    \item Calculate accuracy
+    \item Expected: 90-95\% accuracy
+\end{enumerate}
+\end{tcolorbox}
+
+\subsubsection{Technical Explanation}
+
+\begin{lstlisting}[caption={Evaluation with Quality Metrics}]
+import numpy as np
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+model.eval()
+all_predictions = []
+all_labels = []
+
+with torch.no_grad():
+    for test_data, test_labels in test_loader:
+        
+        if test_data.shape[0] == 0:
+            print("ERROR: Empty batch!")
+            continue
+        
+        predictions = model(test_data)
+        preds = torch.argmax(predictions, dim=1).cpu().numpy()
+        labels = test_labels.cpu().numpy()
+        
+        all_predictions.extend(preds)
+        all_labels.extend(labels)
+
+all_predictions = np.array(all_predictions)
+all_labels = np.array(all_labels)
+
+print(f"Predictions with NULL: {np.isnan(all_predictions).sum()}")
+print(f"Labels with NULL: {np.isnan(all_labels).sum()}")
+
+accuracy = accuracy_score(all_labels, all_predictions)
+print(f"Accuracy: {accuracy:.4f}")
+\end{lstlisting}
+
+% ============================================================================
+\section{Your Data Quality Validation Checklist}
+% ============================================================================
+
+\subsection{Complete Data Validation Script}
+
+\begin{lstlisting}[caption={Complete Validation (Your Main Task)}]
+import numpy as np
+import pandas as pd
+import glob
+import os
+
+def validate_data_quality(data_dir):
+    print("="*60)
+    print("DATA QUALITY VALIDATION REPORT")
+    print("="*60)
+    
+    files = glob.glob(os.path.join(data_dir, "*.npz"))
+    total_issues = 0
+    
+    for file in files:
+        print(f"\nValidating: {os.path.basename(file)}")
+        print("-" * 40)
+        
+        try:
+            data = np.load(file)
+            signals = data['data']
+            labels = data['labels']
+            
+            # CHECK 1: NULL Values
+            print("CHECK 1: NULL Values")
+            nan_signals = np.isnan(signals).sum()
+            nan_labels = np.isnan(labels).sum()
+            inf_signals = np.isinf(signals).sum()
+            
+            if nan_signals > 0:
+                print(f"  WARNING: {nan_signals} NaN values in signals!")
+                total_issues += 1
+            else:
+                print(f"  OK: No NaN in signals")
+            
+            if nan_labels > 0:
+                print(f"  WARNING: {nan_labels} NaN in labels!")
+                total_issues += 1
+            else:
+                print(f"  OK: No NaN in labels")
+            
+            # CHECK 2: Shape Consistency
+            print("\nCHECK 2: Shape Consistency")
+            if signals.shape != (signals.shape[0], 22, 875):
+                print(f"  WARNING: Unexpected shape {signals.shape}")
+                total_issues += 1
+            else:
+                print(f"  OK: Shape is {signals.shape}")
+            
+            # CHECK 3: Labels Validity
+            print("\nCHECK 3: Labels Validity")
+            unique_labels = np.unique(labels)
+            print(f"  Unique labels: {unique_labels}")
+            
+            if not set(unique_labels).issubset({0, 1, 2, 3}):
+                print(f"  WARNING: Invalid label values!")
+                total_issues += 1
+            else:
+                print(f"  OK: All labels valid")
+            
+            # CHECK 4: Class Balance
+            print("\nCHECK 4: Class Balance")
+            unique, counts = np.unique(labels, return_counts=True)
+            for label, count in zip(unique, counts):
+                print(f"  Class {int(label)}: {count} samples")
+            
+            # CHECK 5: Signal Statistics
+            print("\nCHECK 5: Signal Statistics")
+            print(f"  Mean: {signals.mean():.4f} (should be 0)")
+            print(f"  Std:  {signals.std():.4f} (should be 1)")
+            print(f"  Min:  {signals.min():.4f}")
+            print(f"  Max:  {signals.max():.4f}")
+            
+        except Exception as e:
+            print(f"  ERROR loading file: {e}")
+            total_issues += 1
+    
+    print(f"\n{'='*60}")
+    print(f"TOTAL ISSUES FOUND: {total_issues}")
+    status = "PASS" if total_issues == 0 else "REVIEW NEEDED"
+    print(f"Status: {status}")
+    print(f"{'='*60}\n")
+    
+    return total_issues == 0
+
+if __name__ == "__main__":
+    data_dir = "path/to/preprocessed/data"
+    is_valid = validate_data_quality(data_dir)
+    
+    if is_valid:
+        print("Data is ready for training!")
+    else:
+        print("Data needs cleaning before training!")
+\end{lstlisting}
+
+% ============================================================================
+\section{Interview Questions and Answers}
+% ============================================================================
+
+\subsection{Question 1: What is the main purpose of this project?}
+
+\textbf{Answer:}
+
+The MSVTNet project is designed to \textbf{recognize motor imagery} (brain signals representing thought about movement) and classify them into 4 categories: Left Hand, Right Hand, Feet, or Tongue. 
+
+\textbf{Application:} Brain-Computer Interface (BCI) for helping paralyzed patients control prosthetic limbs or wheelchairs using only their thoughts.
+
+\textbf{Key Achievement:} 94 percent plus accuracy on real EEG data.
+
+---
+
+\subsection{Question 2: What is your role in this project?}
+
+\textbf{Answer:}
+
+My role is \textbf{Data Quality and Validation Specialist}. My responsibilities include:
+
+\begin{enumerate}
+    \item Checking for NULL/NaN values in brain signal data using NumPy and Pandas
+    \item Validating data integrity across all datasets
+    \item Identifying anomalies (outliers, incorrect values)
+    \item Ensuring consistency before model training begins
+    \item Generating quality reports for stakeholders
+\end{enumerate}
+
+I use Python libraries like \textbf{NumPy} for array operations and \textbf{Pandas} for data frame analysis.
+
+---
+
+\subsection{Question 3: How do you check for NULL values?}
+
+\textbf{Answer:}
+
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+
+# Load data
+data = np.load('preprocessed_data.npz')
+signals = data['data']
+labels = data['labels']
+
+# Method 1: NumPy (for arrays)
+nan_count = np.isnan(signals).sum()
+print(f"Total NaN values: {nan_count}")
+
+# Method 2: Pandas
+df = pd.DataFrame(signals.reshape(signals.shape[0], -1))
+print(f"Null per column:\n{df.isnull().sum()}")
+
+# Method 3: Check for infinite values
+inf_count = np.isinf(signals).sum()
+print(f"Infinite values: {inf_count}")
+
+# Complete validation
+if nan_count == 0 and inf_count == 0:
+    print("Data is clean!")
+else:
+    print("Data contains anomalies")
+\end{lstlisting}
+
+---
+
+\subsection{Question 4: What are the three main blocks of MSVTNet?}
+
+\textbf{Answer:}
+
+\begin{enumerate}
+    \item \textbf{MSST Block (Multi-Scale Spatio-Temporal)}
+    \begin{itemize}
+        \item Extracts patterns at 3 different time scales
+        \item Uses CNN with kernel sizes: 3, 5, 7
+        \item Captures both fast and slow patterns in brain signals
+    \end{itemize}
+    
+    \item \textbf{CSGT Block (Cross-Scale Global Temporal Encoder)}
+    \begin{itemize}
+        \item Uses Transformer with multi-head attention
+        \item Learns relationships between patterns from different scales
+        \item Combines 3 feature maps into 1 unified representation
+    \end{itemize}
+    
+    \item \textbf{Classification Head}
+    \begin{itemize}
+        \item Fully connected layers plus ReLU activation
+        \item Makes final prediction
+        \item Output: 4 class probabilities
+    \end{itemize}
+\end{enumerate}
+
+---
+
+\subsection{Question 5: What preprocessing steps are applied to raw data?}
+
+\textbf{Answer:}
+
+\begin{enumerate}
+    \item \textbf{Bandpass Filter (4-40 Hz)}
+    \begin{itemize}
+        \item Removes electrical noise outside motor cortex frequency range
+        \item Keeps only relevant brain signals
+    \end{itemize}
+    
+    \item \textbf{Common Average Reference (CAR)}
+    \begin{itemize}
+        \item Subtracts mean of all channels from each channel
+        \item Removes common environmental noise
+    \end{itemize}
+    
+    \item \textbf{Standardization (Z-score Normalization)}
+    \begin{itemize}
+        \item Converts to mean = 0, standard deviation = 1
+        \item Makes signals comparable across subjects
+    \end{itemize}
+    
+    \item \textbf{Epoch Extraction}
+    \begin{itemize}
+        \item Extracts 3.5-second windows (875 samples at 250 Hz)
+        \item Labels each window with movement class
+    \end{itemize}
+\end{enumerate}
+
+---
+
+\subsection{Question 6: How do you validate training data before feeding to model?}
+
+\textbf{Answer:}
+
+\begin{lstlisting}
+def validate_before_training(train_loader):
+    for batch_idx, (data, labels) in enumerate(train_loader):
+        
+        # Check 1: No NULL values
+        assert not torch.isnan(data).any(), \
+            f"NaN found in batch {batch_idx}"
+        
+        # Check 2: Correct shape
+        assert data.shape[1:] == (22, 875), \
+            f"Unexpected shape: {data.shape}"
+        
+        # Check 3: Labels in valid range
+        assert labels.min() >= 0 and labels.max() < 4, \
+            f"Invalid labels: {labels.unique()}"
+        
+        # Check 4: No empty batches
+        assert data.shape[0] > 0, "Empty batch!"
+        
+        if batch_idx == 0:
+            print("First batch validation passed!")
+            print(f"  Data: {data.shape}, Labels: {labels.shape}")
+\end{lstlisting}
+
+---
+
+\subsection{Question 7: What is Cross-Entropy Loss?}
+
+\textbf{Answer:}
+
+\textbf{Simple Explanation:} A mathematical formula that measures how wrong the model's prediction is.
+
+\begin{itemize}
+    \item If model predicts LEFT HAND correctly: Loss is approximately 0 (very good)
+    \item If model predicts TONGUE but actual is LEFT HAND: Loss is approximately 2.5 (very bad)
+\end{itemize}
+
+\textbf{Mathematical Formula:}
+\begin{equation}
+L = -\sum_{i=1}^{C} y_i \log(\hat{y}_i)
+\end{equation}
+
+Where:
+\begin{itemize}
+    \item $y_i$ = actual label (1 if correct class, 0 otherwise)
+    \item $\hat{y}_i$ = predicted probability for class $i$
+    \item $C$ = number of classes (4 in our case)
+\end{itemize}
+
+\textbf{Goal during training:} Minimize this loss value.
+
+---
+
+\subsection{Question 8: What is Backpropagation?}
+
+\textbf{Answer:}
+
+\textbf{Simple Analogy:} Like throwing darts at a target:
+
+\begin{enumerate}
+    \item You throw dart --- It misses
+    \item You measure: Missed 10cm to the right
+    \item Next throw: Adjust aim 10cm to the left
+    \item Repeat: Dart gets closer each time
+\end{enumerate}
+
+\textbf{In AI:}
+
+\begin{enumerate}
+    \item Model makes prediction --- Calculates loss
+    \item Works backwards through all layers
+    \item Calculates: Which weights caused this error?
+    \item Adjusts all weights slightly in the right direction
+    \item Repeat: Model gets better each epoch
+\end{enumerate}
+
+---
+
+\subsection{Question 9: What does Dropout do?}
+
+\textbf{Answer:}
+
+\textbf{Purpose:} Prevent overfitting (memorization instead of learning).
+
+\textbf{How it works:}
+
+During training:
+\begin{itemize}
+    \item Randomly turn off 50 percent of neurons
+    \item Network must learn without relying on any single neuron
+    \item Makes model more robust
+\end{itemize}
+
+During testing:
+\begin{itemize}
+    \item All neurons are ON
+    \item Model uses everything it learned
+\end{itemize}
+
+---
+
+\subsection{Question 10: What is Early Stopping?}
+
+\textbf{Answer:}
+
+\textbf{Purpose:} Stop training when model stops improving to prevent overfitting.
+
+\textbf{How it works:}
+
+\begin{enumerate}
+    \item Monitor validation accuracy after each epoch
+    \item If accuracy improves: Continue training
+    \item If accuracy gets worse for N consecutive epochs: STOP
+    \item Use the model from best epoch
+\end{enumerate}
+
+% ============================================================================
+\section{Key Algorithms Used}
+% ============================================================================
+
+\subsection{1. Convolutional Neural Network (CNN)}
+Purpose: Extract patterns from sequential data (brain signals)
+
+\subsection{2. Transformer (Self-Attention)}
+Purpose: Learn relationships between time steps and features
+
+\subsection{3. Multi-Head Attention}
+Purpose: Focus on different types of patterns simultaneously
+
+\subsection{4. Backpropagation}
+Purpose: Learn by adjusting weights based on prediction errors
+
+\subsection{5. ADAM Optimizer}
+Purpose: Update weights with adaptive learning rates
+
+\subsection{6. Dropout}
+Purpose: Prevent overfitting by random neuron deactivation
+
+\subsection{7. Batch Normalization}
+Purpose: Stabilize training and normalize data within batches
+
+\subsection{8. Cross-Entropy Loss}
+Purpose: Measure how wrong model predictions are
+
+% ============================================================================
+\section{Summary and Key Takeaways}
+% ============================================================================
+
+\subsection{Project Overview}
+\begin{itemize}
+    \item \textbf{Goal:} Classify EEG brain signals into 4 movement classes
+    \item \textbf{Accuracy:} 94 percent plus on real data
+    \item \textbf{Application:} Brain-Computer Interface for rehabilitation
+    \item \textbf{Technology:} PyTorch, Transformers, CNNs
+\end{itemize}
+
+\subsection{Your Role}
+\begin{itemize}
+    \item \textbf{Data Quality Specialist}
+    \item Check for NULL/NaN values using NumPy and Pandas
+    \item Validate data integrity before training
+    \item Generate quality reports
+    \item Ensure consistent data shapes and types
+\end{itemize}
+
+\subsection{Training Pipeline}
+\begin{enumerate}
+    \item \textbf{Data Collection:} Record EEG signals from subjects
+    \item \textbf{Preprocessing:} Filter, normalize, and clean data
+    \item \textbf{Data Validation:} Your role - check quality
+    \item \textbf{Model Training:} Feed data, calculate loss, backpropagate
+    \item \textbf{Testing:} Evaluate on unseen data
+    \item \textbf{Deployment:} Use model for BCI applications
+\end{enumerate}
+
+\subsection{Key Metrics to Remember}
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Metric} & \textbf{Expected Value} \\
+\hline
+Accuracy & 90-95 percent \\
+Loss & less than 0.5 \\
+NaN count & 0 \\
+Signal mean & approximately 0 \\
+Signal std & approximately 1 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Quick Reference: Daily Tasks}
+
+\begin{lstlisting}[caption={Your Daily Task - Check NULL Values}]
+import numpy as np
+import pandas as pd
+
+# Load data
+data = np.load('S01_session_1_preprocessed.npz')
+signals = data['data']
+labels = data['labels']
+
+# Quick checks
+print(f"NaN in signals: {np.isnan(signals).sum()}")
+print(f"NaN in labels: {np.isnan(labels).sum()}")
+print(f"Data shape: {signals.shape}")
+print(f"Label distribution: {np.bincount(labels)}")
+
+# If using Pandas
+df = pd.DataFrame({
+    'signal_mean': signals.mean(axis=(1,2)),
+    'signal_std': signals.std(axis=(1,2)),
+    'label': labels
+})
+print(df.isnull().sum())
+\end{lstlisting}
+
+% ============================================================================
+\end{document}
