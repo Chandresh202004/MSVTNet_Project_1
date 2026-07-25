@@ -1,0 +1,40 @@
+MSVTNet Combined Analysis: Session-Dependent vs Session-Independent
+Generated on: 2025-06-24 19:24:22
+User: chand
+
+================================================================================
+1. Overall Approach Comparison
+================================================================================
+
+Session-Dependent Average Accuracy: 0.2801
+Session-Independent Average Accuracy: 0.3975
+
+Session-Independent approach performs better by 0.1174 (41.92%)
+
+================================================================================
+2. Subject-by-Subject Comparison
+================================================================================
+
+| Subject | Session-Dependent | Session-Independent | Difference | Better Approach |
+|---------|------------------|---------------------|------------|----------------|
+| Subject 1 | 0.2812 | 0.4052 | 0.1239 | Independent |
+| Subject 2 | 0.2500 | 0.3103 | 0.0603 | Independent |
+| Subject 3 | 0.2674 | 0.4569 | 0.1895 | Independent |
+| Subject 4 | 0.2569 | 0.3276 | 0.0706 | Independent |
+| Subject 5 | 0.2951 | 0.4138 | 0.1187 | Independent |
+| Subject 6 | 0.2778 | 0.3534 | 0.0757 | Independent |
+| Subject 7 | 0.2986 | 0.4397 | 0.1410 | Independent |
+| Subject 8 | 0.2917 | 0.4914 | 0.1997 | Independent |
+| Subject 9 | 0.3021 | 0.3793 | 0.0772 | Independent |
+
+================================================================================
+3. Recommendations
+================================================================================
+
+Based on the analysis:
+- Session-Independent approach generally performs better
+- Consider using session-independent training for deployment
+
+Recommended next steps:
+- For subjects with high variance between approaches, investigate subject-specific characteristics.
+- Consider adding domain adaptation techniques to improve session transfer performance.
